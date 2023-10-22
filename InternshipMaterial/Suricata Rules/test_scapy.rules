@@ -1,0 +1,1 @@
+alert tcp any any -> any any (msg:” Too much CPU usage/high temperature/high humidity. Possible attack!!!”; luajit: lua_script.lua; sid:102; rev:1)
