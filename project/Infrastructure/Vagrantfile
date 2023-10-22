@@ -1,0 +1,46 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/bullseye64"
+
+  config.vm.box_check_update = false
+  #config.vm.network "forwarded_port", guest: 501, host: 1234
+  
+  config.vm.provider "virtualbox" do |vb|
+    vb.linked_clone = true
+    vb.memory = "512"
+  end
+  
+  config.vm.define "client" do |machine|
+    machine.vm.hostname = "client"
+    machine.vm.network "private_network", virtualbox__intnet: "LANCLIENT", auto_config: false
+    machine.vm.provision "ansible" do |ansible|
+      ansible.playbook = "secnet.yml"
+    end
+  end
+
+  config.vm.define "R1" do |machine|
+    machine.vm.hostname = "R1"
+    machine.vm.network "private_network", virtualbox__intnet: "LANCLIENT", ip: "192.168.10.254"
+    machine.vm.network "private_network", virtualbox__intnet: "INTERNET", auto_config: false
+    machine.vm.provision "ansible" do |ansible|
+      ansible.playbook = "secnet.yml"
+    end
+  end
+
+  config.vm.define "R2" do |machine|
+    machine.vm.hostname = "R2"
+    machine.vm.network "private_network", virtualbox__intnet: "LANSERVER", ip: "192.168.20.254"
+    machine.vm.network "private_network", virtualbox__intnet: "INTERNET", auto_config: false
+    machine.vm.provision "ansible" do |ansible|
+      ansible.playbook = "secnet.yml"
+    end
+  end
+
+  config.vm.define "server" do |machine|
+    machine.vm.hostname = "server"
+    machine.vm.network "private_network", virtualbox__intnet: "LANSERVER", auto_config: false
+    machine.vm.provision "ansible" do |ansible|
+      ansible.playbook = "secnet.yml"
+    end
+  end
+
+end

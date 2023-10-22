@@ -1,0 +1,89 @@
+---
+- hosts: all
+  become: true
+  tasks:
+  - name: Change allow-hotplug with auto
+    ansible.builtin.replace:
+      path: '/etc/network/interfaces'
+      regexp: '^allow\-hotplug'
+      replace: 'auto'
+      validate: /usr/sbin/ifup --no-act -i %s eth0
+
+- hosts: client
+  become: true
+  tasks:
+    - name: c2s route
+      ansible.builtin.copy:
+        src: eth1client
+        dest: /etc/network/interfaces.d/eth1
+        validate: /usr/sbin/ifup --no-act -i %s eth1
+      notify: Restart Networking
+  handlers:
+  - name: Restart Networking
+    ansible.builtin.service:
+      name: networking
+      state: restarted
+
+- hosts: server
+  become: true
+  tasks:
+    - name: s2c route
+      ansible.builtin.copy:
+        src: eth1server
+        dest: /etc/network/interfaces.d/eth1
+        validate: /usr/sbin/ifup --no-act -i %s eth1
+      notify: Restart Networking
+  handlers:
+  - name: Restart Networking
+    ansible.builtin.service:
+      name: networking
+      state: restarted
+
+- hosts: R1
+  become: true
+  tasks:
+    - name: R1 routes
+      ansible.builtin.copy:
+        src: eth2R1
+        dest: /etc/network/interfaces.d/eth2
+        validate: /usr/sbin/ifup --no-act -i %s eth2
+      notify: Restart Networking
+
+    - name: R1 forwarding
+      ansible.builtin.replace:
+        path: /etc/sysctl.conf
+        regexp: '^#net\.ipv4\.ip_forward=1$'
+        replace: 'net.ipv4.ip_forward=1'
+      notify: Reload Sysctl
+  handlers:
+  - name: Restart Networking
+    ansible.builtin.service:
+      name: networking
+      state: restarted
+  - name: Reload Sysctl
+    ansible.builtin.shell: sysctl -p
+
+
+- hosts: R2
+  become: true
+  tasks:
+    - name: R2 routes
+      ansible.builtin.copy:
+        src: eth2R2
+        dest: /etc/network/interfaces.d/eth2
+        validate: /usr/sbin/ifup --no-act -i %s eth2
+      notify: Restart Networking
+
+    - name: R2 forwarding
+      ansible.builtin.replace:
+        path: /etc/sysctl.conf
+        regexp: '^#net\.ipv4\.ip_forward=1$'
+        replace: 'net.ipv4.ip_forward=1'
+      notify: Reload Sysctl
+  handlers:
+  - name: Restart Networking
+    ansible.builtin.service:
+      name: networking
+      state: restarted
+  - name: Reload Sysctl
+    ansible.builtin.shell: sysctl -p

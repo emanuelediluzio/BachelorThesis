@@ -1,0 +1,5 @@
+auto eth2
+iface eth2 inet static
+  address 10.12.12.10
+  netmask 255.255.255.0
+  up ip r add 192.168.20.0/24 via 10.12.12.20
